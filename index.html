@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin - Evidence bodů</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #007bff;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #fd7e14;
+            --bg: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --text-muted: #6c757d;
+        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg); color: var(--text-main); margin: 0; padding: 15px; line-height: 1.5; }
+        
+        /* Typography & Layout */
+        h1, h2, h3 { color: var(--text-main); margin-top: 0; }
+        h1 { font-size: 1.5rem; text-align: center; }
+        hr { border: 0; border-top: 1px solid #ddd; margin: 15px 0; }
+        
+        /* Buttons */
+        .btn-large { display: flex; align-items: center; justify-content: center; width: 100%; padding: 20px; font-size: 1.2rem; background-color: var(--primary); color: white; border: none; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 6px rgba(0, 123, 255, 0.2); font-weight: bold; }
+        .btn-large i { margin-right: 10px; font-size: 1.5rem; }
+        
+        /* Cards */
+        .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .card p { margin: 10px 0; font-size: 1.1rem; }
+        .card .total { font-size: 1.3rem; font-weight: bold; }
+        
+        /* Text Colors */
+        .text-success { color: var(--success); font-weight: bold; }
+        .text-danger { color: var(--danger); font-weight: bold; }
+        .text-warning { color: var(--warning); font-weight: bold; }
+        
+        /* Modal Overlay */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 1000; opacity: 0; visibility: hidden; transition: 0.3s; }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-content { background: var(--card-bg); width: 100%; max-width: 400px; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-content h2 { text-align: center; margin-bottom: 20px; }
+        
+        /* Toggle Buttons */
+        .toggle-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        .toggle-btn { flex: 1; padding: 12px; border: 2px solid #ddd; background: transparent; border-radius: 8px; font-size: 1.1rem; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .toggle-btn.active.positive { border-color: var(--success); background: #d4edda; color: var(--success); }
+        .toggle-btn.active.negative { border-color: var(--danger); background: #f8d7da; color: var(--danger); }
+        
+        /* Input area */
+        .input-group { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 25px; }
+        .sign-indicator { font-size: 2.5rem; font-weight: bold; width: 40px; text-align: center; }
+        .sign-indicator.positive { color: var(--success); }
+        .sign-indicator.negative { color: var(--danger); }
+        .number-input { width: 100px; padding: 10px; font-size: 1.5rem; text-align: center; border: 2px solid #ddd; border-radius: 8px; outline: none; }
+        .number-input:focus { border-color: var(--primary); }
+        
+        /* Action Buttons */
+        .action-group { display: flex; gap: 10px; }
+        .action-btn { flex: 1; padding: 15px; font-size: 1.1rem; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; }
+        .btn-cancel { background: var(--text-muted); }
+        .btn-confirm { background: var(--success); }
+    </style>
+</head>
+<body>
+
+    <h1>Admin: Evidence bodů</h1>
+    <hr>
+    <button class="btn-large" id="openModalBtn">
+        <i class="fas fa-plus"></i> Přidat body
+    </button>
+    <hr>
+
+    <div class="modal-overlay" id="addModal">
+        <div class="modal-content">
+            <h2>Přidat body</h2>
+            <div class="toggle-group">
+                <button class="toggle-btn active positive" id="togglePositive">Kladné</button>
+                <button class="toggle-btn" id="toggleNegative">Záporné</button>
+            </div>
+            <div class="input-group">
+                <span class="sign-indicator positive" id="signDisplay">+</span>
+                <input type="text" class="number-input" id="pointsInput" placeholder="0" inputmode="numeric">
+            </div>
+            <div class="action-group">
+                <button class="action-btn btn-cancel" id="closeModalBtn">Zpět</button>
+                <button class="action-btn btn-confirm" id="confirmBtn">Potvrdit</button>
+            </div>
+        </div>
+    </div>
+
+    <h2>Omezený přístup k výpisu bodů Alena:</h2>
+    <div class="card">
+        <p class="total">Celkem: <strong id="totalAlena">0</strong> bodů</p>
+    </div>
+
+    <h3>Dnes porovnání:</h3>
+    <div class="card">
+        <p>Zisky: <span id="todayGains" class="text-success">0</span> bodů</p>
+        <p>Ztráty: <span id="todayLosses" class="text-danger">0</span> bodů</p>
+        <p>Zatím: <span id="todayStatus">-</span></p>
+    </div>
+
+    <div class="card">
+        <p class="total">Vítězí: <strong id="winnerName">Načítání...</strong></p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, push, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCekKDGHqzFZSWRRdcbWSWaxsB-hZLappc",
+            authDomain: "alenabody.firebaseapp.com",
+            databaseURL: "https://alenabody-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "alenabody",
+            storageBucket: "alenabody.firebasestorage.app",
+            messagingSenderId: "86155732965",
+            appId: "1:86155732965:web:e8085dbc3520444691f10c"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Získání dnešního data ve formátu YYYY-MM-DD (lokální časová zóna)
+        const dateObj = new Date();
+        const todayStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+
+        // Globální stavy pro výpočet vítěze
+        let alenaTotalPoints = 0;
+        let klaraTotalPoints = 0;
+
+        // Inicializace denních složek
+        async function initDailyFolders() {
+            const klaraRef = ref(db, 'KlaraL/' + todayStr);
+            const snapshot = await get(klaraRef);
+            if (!snapshot.exists()) {
+                await set(klaraRef, 30); // Automatické vytvoření 30 bodů pro Kláru pro dnešní den
+            }
+        }
+        initDailyFolders();
+
+        // Modal Logic
+        const modal = document.getElementById('addModal');
+        const btnOpen = document.getElementById('openModalBtn');
+        const btnClose = document.getElementById('closeModalBtn');
+        const btnConfirm = document.getElementById('confirmBtn');
+        const input = document.getElementById('pointsInput');
+        const tglPos = document.getElementById('togglePositive');
+        const tglNeg = document.getElementById('toggleNegative');
+        const signDisp = document.getElementById('signDisplay');
+
+        let isPositive = true;
+
+        btnOpen.onclick = () => {
+            modal.classList.add('active');
+            input.value = '';
+        };
+        btnClose.onclick = () => modal.classList.remove('active');
+
+        tglPos.onclick = () => {
+            isPositive = true;
+            tglPos.classList.add('active', 'positive');
+            tglNeg.classList.remove('active', 'negative');
+            signDisp.textContent = '+';
+            signDisp.className = 'sign-indicator positive';
+        };
+
+        tglNeg.onclick = () => {
+            isPositive = false;
+            tglNeg.classList.add('active', 'negative');
+            tglPos.classList.remove('active', 'positive');
+            signDisp.textContent = '-';
+            signDisp.className = 'sign-indicator negative';
+        };
+
+        // Zamezení psaní čehokoliv jiného než čísel
+        input.addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '');
+        });
+
+        // Potvrzení uložení do databáze
+        btnConfirm.onclick = async () => {
+            if(input.value === '') return;
+            const num = parseInt(input.value);
+            const finalValue = isPositive ? num : -num;
+            
+            try {
+                await push(ref(db, 'Alena/' + todayStr), finalValue);
+                modal.classList.remove('active');
+            } catch (error) {
+                alert("Chyba při ukládání: " + error.message);
+            }
+        };
+
+        // Vykreslování dat a posluchače
+        const updateWinner = () => {
+            const winnerEl = document.getElementById('winnerName');
+            if(alenaTotalPoints > klaraTotalPoints) winnerEl.textContent = "Alena R.";
+            else if (klaraTotalPoints > alenaTotalPoints) winnerEl.textContent = "Klára L.";
+            else winnerEl.textContent = "Remíza";
+        };
+
+        onValue(ref(db, 'Alena'), (snapshot) => {
+            alenaTotalPoints = 0;
+            let todayGains = 0;
+            let todayLosses = 0;
+
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                for (const [date, points] of Object.entries(data)) {
+                    for (const [key, value] of Object.entries(points)) {
+                        alenaTotalPoints += value;
+                        if (date === todayStr) {
+                            if (value > 0) todayGains += value;
+                            if (value < 0) todayLosses += value;
+                        }
+                    }
+                }
+            }
+
+            document.getElementById('totalAlena').textContent = alenaTotalPoints;
+            document.getElementById('todayGains').textContent = todayGains;
+            // Absolutní hodnota, aby se přidalo minus ručně v HTML, ale hodnota z db je negativní
+            const absLosses = Math.abs(todayLosses);
+            document.getElementById('todayLosses').textContent = "-" + absLosses;
+
+            const statusEl = document.getElementById('todayStatus');
+            if (todayGains > absLosses) {
+                statusEl.textContent = "Zisky jsou větší než ztráty";
+                statusEl.className = "text-success";
+            } else if (absLosses > todayGains) {
+                statusEl.textContent = "Ztráty jsou větší než zisky";
+                statusEl.className = "text-danger";
+            } else {
+                statusEl.textContent = "Stejné ztráty jako zisky";
+                statusEl.className = "text-warning";
+            }
+
+            updateWinner();
+        });
+
+        onValue(ref(db, 'KlaraL'), (snapshot) => {
+            klaraTotalPoints = 0;
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                for (const [date, value] of Object.entries(data)) {
+                    klaraTotalPoints += value;
+                }
+            }
+            updateWinner();
+        });
+
+    </script>
+</body>
+</html>
